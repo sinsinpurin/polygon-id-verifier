@@ -27,7 +27,7 @@ const requestMap = new Map();
 
 export const GetAuthRequest = async (req: Request<any>, res: Response<any>) => {
     // Audience is verifier id
-    const hostUrl = "http://e153-240d-1a-767-6100-3c1e-a3ea-6d.ngrok.io";
+    const hostUrl = "http://bf2b-150-249-90-99.ngrok.io";
     const sessionId = 1;
     const callbackURL = "/api/callback";
     const audience = "1125GJqgw6YEsKFwj63GY87MMxPL9kwDKxPUiwMLNZ";
@@ -60,9 +60,6 @@ export const GetAuthRequest = async (req: Request<any>, res: Response<any>) => {
                     Role: {
                         $eq: 1,
                     },
-                    iat: {
-                        $lt: 21000101, // dateOfBirth field less then 2100/01/01
-                    },
                 },
             },
         },
@@ -87,13 +84,14 @@ export const Callback = async (req: Request<any>, res: Response<any>) => {
 
     // extract proof from the request
     const raw = await getRawBody(req);
+
     const tokenStr = raw.toString().trim();
 
     // fetch authRequest from sessionID
     const authRequest = requestMap.get(`${sessionId}`);
 
     // Locate the directory that contains circuit's verification keys
-    const verificationKeyloader = new loaders.FSKeyLoader("../keys");
+    const verificationKeyloader = new loaders.FSKeyLoader("keys");
     const sLoader = new loaders.UniversalSchemaLoader("ipfs.io");
 
     // Add Polygon Mumbai RPC node endpoint - needed to read on-chain state and identity state contract address
@@ -108,13 +106,17 @@ export const Callback = async (req: Request<any>, res: Response<any>) => {
         sLoader,
         ethStateResolver,
     );
+    console.log("verifier");
 
     let authResponse;
     try {
+        console.log(authRequest);
         authResponse = await verifier.fullVerify(tokenStr, authRequest);
     } catch (error) {
+        console.log(error);
         return res.status(500).send(error);
     }
+    console.log(authResponse);
     return res
         .status(200)
         .set("Content-Type", "application/json")
